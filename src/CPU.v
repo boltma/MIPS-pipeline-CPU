@@ -17,6 +17,8 @@ module CPU(control, reset, clk, register);
 	wire [1:0] MemtoReg;
 	wire MemRead;
 	wire MemWrite;
+	wire Exception;
+	wire IRQ;
 	
 	// Flush Signals
 	wire Stall;
@@ -63,7 +65,7 @@ module CPU(control, reset, clk, register);
 	reg [31:0] PC;
 	wire [31:0] PC_next;
 	wire [31:0] PC_jump, PC_branch, PC_jr, PC_plus_4;
-	assign PC_plus_4 = PC + 32'd4;
+	assign PC_plus_4 = {PC[31], PC[30:0] + 31'd4};
 	// TODO: Remove Branch Signal, add interrupt
 	assign PCSrc[2] = 0;
 	assign PC_next = Branch_out? PC_branch:
@@ -74,13 +76,13 @@ module CPU(control, reset, clk, register);
 					 32'h80000008;
 	always @(posedge reset or posedge clk)
 		if (reset)
-			PC <= 32'h00000000;
+			PC <= 32'h80000000;
 		else if (~Stall)
 			PC <= PC_next;
 
 	// Fetch instruction
 	wire [31:0] Instruction;
-	InstructionMemory instruction_memory1(.Address(PC), .Instruction(Instruction));
+	InstructionMemory instruction_memory1(.Address({1'b0, PC[30:0]}), .Instruction(Instruction));
 
 	// IF/ID Registers update
 	assign IF_ID_Flush = Branch_out || PCSrc == 3'b001 || PCSrc == 3'b010;
@@ -100,10 +102,11 @@ module CPU(control, reset, clk, register);
 	 	.Write_data(MEM_WB_Write_data), .Read_data1(ID_Databus1), .Read_data2(ID_Databus2), .register(register));
 	
 	Control control1(
-		.OpCode(IF_ID_Instruction[31:26]), .Funct(IF_ID_Instruction[5:0]),
-		.PCSrc(PCSrc[1:0]), .Branch(Branch), .RegWrite(RegWrite), .RegDst(RegDst), 
+		.OpCode(IF_ID_Instruction[31:26]), .Funct(IF_ID_Instruction[5:0]), .IRQ(IRQ), .Kernel(PC[31]),
+		.PCSrc(PCSrc), .Branch(Branch), .RegWrite(RegWrite), .RegDst(RegDst), 
 		.MemRead(MemRead),	.MemWrite(MemWrite), .MemtoReg(MemtoReg),
-		.ALUSrc1(ALUSrc1), .ALUSrc2(ALUSrc2), .ExtOp(ExtOp), .LuOp(LuOp), .ALUOp(ALUOp), .BranchOp(BranchOp));
+		.ALUSrc1(ALUSrc1), .ALUSrc2(ALUSrc2), .ExtOp(ExtOp), .LuOp(LuOp), .ALUOp(ALUOp), .BranchOp(BranchOp),
+		.Exception(Exception));
 
 	HazardUnit hazard_unit1(.ID_EX_MemRead(ID_EX_MemRead), .EX_MEM_MemRead(EX_MEM_MemRead),
 		.RegisterRs(IF_ID_Instruction[25:21]), .RegisterRt(IF_ID_Instruction[20:16]),
@@ -132,8 +135,7 @@ module CPU(control, reset, clk, register);
 	wire [31:0] Imm_out;
 	assign Imm_out = LuOp? {IF_ID_Instruction[15:0], 16'h0000}: Ext_out;
 	
-	// TODO: PC[31] instead of IF_ID_PC...[31]
-	assign PC_jump = {IF_ID_PC_plus_4[31:28], IF_ID_Instruction[25:0], 2'b00};
+	assign PC_jump = {PC[31], IF_ID_PC_plus_4[30:28], IF_ID_Instruction[25:0], 2'b00};
 	assign PC_jr = ID_Rs_data;
 	
 	wire [4:0] Write_register;
@@ -208,8 +210,7 @@ module CPU(control, reset, clk, register);
 	// Branch
 	BranchUnit branch_unit1(.in1(ALU_in1), .in2(ALU_in2), .Branch(ID_EX_Branch), .BranchOp(ID_EX_BranchOp), .out(Branch_out));
 	
-	// TODO: PC[31] instead of ID_EX_PC...[31]
-	assign PC_branch = ID_EX_PC_plus_4 + {ID_EX_Imm[29:0], 2'b00};
+	assign PC_branch = {PC[31], ID_EX_PC_plus_4[30:0] + {ID_EX_Imm[28:0], 2'b00}};
 	
 	// EX/MEM Registers Update
 	always @(posedge reset or posedge clk)
