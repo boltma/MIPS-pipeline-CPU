@@ -27,6 +27,7 @@ module CPU(control, reset, clk, register);
 	wire ID_EX_Flush;
 	
 	// IF/ID Registers
+	reg [31:0] IF_ID_PC;
     reg [31:0] IF_ID_PC_plus_4;
 	reg [31:0] IF_ID_Instruction;
 	
@@ -89,9 +90,11 @@ module CPU(control, reset, clk, register);
 	always @(posedge reset or posedge clk)
 		if (reset || IF_ID_Flush) begin
 			IF_ID_Instruction <= 32'h00000000;
+			IF_ID_PC <= 32'h00000000;
 			IF_ID_PC_plus_4 <= 32'h00000000;
 		end else if (~Stall) begin
 			IF_ID_Instruction <= Instruction;
+			IF_ID_PC <= PC;
 			IF_ID_PC_plus_4 <= PC_plus_4;
 		end
 	
@@ -144,6 +147,9 @@ module CPU(control, reset, clk, register);
 							(RegDst == 2'b10)? 5'd31:
 	 						5'd26;
 	
+	wire [31:0] PC_to_store;
+	assign PC_to_store = (RegDst == 2'b11)? IF_ID_PC: IF_ID_PC_plus_4;
+	
 	// ID/EX Registers Update
 	assign ID_EX_Flush = Stall || Branch_out;
 	always @(posedge reset or posedge clk)
@@ -167,7 +173,7 @@ module CPU(control, reset, clk, register);
 			ID_EX_MemRead <= 1'b0;
 			ID_EX_MemWrite <= 1'b0;
 		end else begin
-			ID_EX_PC_plus_4 <= IF_ID_PC_plus_4;
+			ID_EX_PC_plus_4 <= PC_to_store;
 			ID_EX_Branch <= Branch;
 			ID_EX_BranchOp <= BranchOp;
 			ID_EX_RegWrite <= RegWrite;
