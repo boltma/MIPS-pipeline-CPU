@@ -1,7 +1,7 @@
-module CPU(control, reset, clk, register);
+module CPU(reset, clk, leds, digits);
 	input reset, clk;
-	input [1:0] control;
-	output [7:0] register;
+	output [7:0] leds;
+	output [11:0] digits;
 	
 	// Control Signals
 	wire [2:0] PCSrc;
@@ -68,7 +68,6 @@ module CPU(control, reset, clk, register);
 	wire [31:0] PC_jump, PC_branch, PC_jr, PC_plus_4;
 	assign PC_plus_4 = {PC[31], PC[30:0] + 31'd4};
 	// TODO: Remove Branch Signal, add interrupt
-	assign PCSrc[2] = 0;
 	assign PC_next = Branch_out? PC_branch:
 					 (PCSrc == 3'b000)? PC_plus_4:
 					 (PCSrc == 3'b001)? PC_jump:
@@ -100,9 +99,9 @@ module CPU(control, reset, clk, register);
 	
 	// ID Stage
 	wire [31:0] ID_Databus1, ID_Databus2;
-	RegisterFile register_file1(.control(control), .reset(reset), .clk(clk), .RegWrite(MEM_WB_RegWrite), 
+	RegisterFile register_file1(.reset(reset), .clk(clk), .RegWrite(MEM_WB_RegWrite), 
 	 	.Read_register1(IF_ID_Instruction[25:21]), .Read_register2(IF_ID_Instruction[20:16]), .Write_register(MEM_WB_RegisterRd),
-	 	.Write_data(MEM_WB_Write_data), .Read_data1(ID_Databus1), .Read_data2(ID_Databus2), .register(register));
+	 	.Write_data(MEM_WB_Write_data), .Read_data1(ID_Databus1), .Read_data2(ID_Databus2));
 	
 	Control control1(
 		.OpCode(IF_ID_Instruction[31:26]), .Funct(IF_ID_Instruction[5:0]), .IRQ(IRQ), .Kernel(PC[31]),
@@ -122,7 +121,7 @@ module CPU(control, reset, clk, register);
 	wire [1:0] EX_RsSrc;
 	wire [1:0] EX_RtSrc;
 	ForwardUnit forward_unit1(.RegisterRs(IF_ID_Instruction[25:21]), .RegisterRt(IF_ID_Instruction[20:16]),
-		.ID_EX_RegisterRs(ID_EX_RegisterRs), .ID_EX_RegisterRt(ID_EX_RegisterRt), .ID_EX_RegWrite(ID_EX_RegWrite),
+		.ID_EX_RegisterRs(ID_EX_RegisterRs), .ID_EX_RegisterRt(ID_EX_RegisterRt),
 		.EX_MEM_RegWrite(EX_MEM_RegWrite), .EX_MEM_RegisterRd(EX_MEM_RegisterRd),
 		.MEM_WB_RegWrite(MEM_WB_RegWrite), .MEM_WB_RegisterRd(MEM_WB_RegisterRd),
 		.ForwardA_ID(ID_RsSrc), .ForwardB_ID(ID_RtSrc), .ForwardA_EX(EX_RsSrc), .ForwardB_EX(EX_RtSrc));
@@ -242,8 +241,9 @@ module CPU(control, reset, clk, register);
 	
 	// MEM Stage
 	wire [31:0] Read_data;
-	DataMemory data_memory1(.reset(reset), .clk(clk), .Address(EX_MEM_ALU_out),
-		.Write_data(EX_MEM_Rt_data), .Read_data(Read_data), .MemRead(EX_MEM_MemRead), .MemWrite(EX_MEM_MemWrite));
+	Bus bus1(.reset(reset), .clk(clk), .Address(EX_MEM_ALU_out),
+		.Write_data(EX_MEM_Rt_data), .Read_data(Read_data), .MemRead(EX_MEM_MemRead), .MemWrite(EX_MEM_MemWrite),
+		.leds(leds), .digits(digits), .IRQ(IRQ));
 	
 	wire [31:0] Write_data;
 	assign Write_data = (EX_MEM_MemtoReg == 2'b00)? EX_MEM_ALU_out:

@@ -2,28 +2,26 @@
 `define PERIOD 100
 
 module CPU_tb;
-reg [1:0] control;
 reg reset;
 reg clk;
-wire [7:0] register;
+wire [7:0] leds;
+wire [11:0] digits;
 
-CPU cpu1(control, reset, clk, register);
+CPU cpu1(reset, clk, leds, digits);
 
 initial begin
-	control = 2'b00;
     reset = 1;
     clk = 1;
-    #1000 reset = 0;
-    #9000 reset = 1;
-    control = 2'b01;
-    #1000 reset = 0;
-    #9000 reset = 1;
-    control = 2'b10;
-    #1000 reset = 0;
-    #9000 reset = 1;
-    control = 2'b11;
-    #1000 reset = 0;
-    #9000 $finish;
+    $readmemh("instruction.txt", cpu1.instruction_memory1.RAM_data);
+    $display("Instructions loaded");
+    #100 reset = 0;
+    $readmemh("data.txt", cpu1.bus1.data_memory1.RAM_data);
+    $display("Data loaded");
+end
+
+always @(posedge leds[0]) begin
+    $writememh("data2.txt", cpu1.bus1.data_memory1.RAM_data);
+    $finish;
 end
 
 always #(`PERIOD/2) clk = ~clk;

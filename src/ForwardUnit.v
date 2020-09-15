@@ -1,5 +1,5 @@
 module ForwardUnit(RegisterRs, RegisterRt,
-				   ID_EX_RegisterRs, ID_EX_RegisterRt, ID_EX_RegWrite,
+				   ID_EX_RegisterRs, ID_EX_RegisterRt,
 				   EX_MEM_RegWrite, EX_MEM_RegisterRd,
 				   MEM_WB_RegWrite, MEM_WB_RegisterRd,
 				   ForwardA_ID, ForwardB_ID, ForwardA_EX, ForwardB_EX);
@@ -7,7 +7,6 @@ module ForwardUnit(RegisterRs, RegisterRt,
 	input [4:0] RegisterRt;
 	input [4:0] ID_EX_RegisterRs;
 	input [4:0] ID_EX_RegisterRt;
-	input ID_EX_RegWrite;
 	input EX_MEM_RegWrite;
 	input [4:0] EX_MEM_RegisterRd;
 	input MEM_WB_RegWrite;
