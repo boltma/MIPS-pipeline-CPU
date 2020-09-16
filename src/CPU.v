@@ -85,11 +85,17 @@ module CPU(reset, clk, leds, digits);
 	InstructionMemory instruction_memory1(.Address({1'b0, PC[30:0]}), .Instruction(Instruction));
 
 	// IF/ID Registers update
-	assign IF_ID_Flush = Branch_out || PCSrc == 3'b001 || PCSrc == 3'b010;
+	assign IF_ID_Flush = Branch_out || |PCSrc;
 	always @(posedge reset or posedge clk)
 		if (reset || IF_ID_Flush) begin
 			IF_ID_Instruction <= 32'h00000000;
-			IF_ID_PC <= 32'h00000000;
+			if (reset) begin
+				IF_ID_PC <= 32'h00000000;
+			end else if (PCSrc == 3'b001 || PCSrc == 3'b010 || Branch || Branch_out) begin
+				IF_ID_PC <= IF_ID_PC;
+			end else begin
+				IF_ID_PC <= PC;
+			end
 			IF_ID_PC_plus_4 <= 32'h00000000;
 		end else if (~Stall) begin
 			IF_ID_Instruction <= Instruction;
