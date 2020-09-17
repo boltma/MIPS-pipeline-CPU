@@ -13,12 +13,12 @@ userMain:
 	lui $s7, 0x00004000		# $s7 = 0x40000000
 	lw $s6, 20($s7)
 	
-	li $sp, 512			# prevent $sp grow out of range
+	li $sp, 1024			# prevent $sp grow out of range
 	
 	# call quickSort
 	li $a0, 0			# $a0 = 0x00000000 as start address
-	li $a1, 0			# $a1 = 1
-	li $a2, 4			# $a2 = 128
+	li $a1, 0			# $a1 = 0
+	li $a2, 127			# $a2 = 127
 	jal quickSort
 	
 	# load SysTick again, $s7 = 0x40000000
