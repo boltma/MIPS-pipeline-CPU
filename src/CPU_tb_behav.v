@@ -21,7 +21,7 @@ end
 
 always @(posedge leds[0]) begin
     $writememh("data_sorted.txt", cpu1.bus1.data_memory1.RAM_data);
-    $finish;
+    #5000 $finish;
 end
 
 always #(`PERIOD/2) clk = ~clk;

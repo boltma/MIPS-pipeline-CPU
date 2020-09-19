@@ -67,13 +67,12 @@ module CPU(reset, clk, leds, digits);
 	wire [31:0] PC_next;
 	wire [31:0] PC_jump, PC_branch, PC_jr, PC_plus_4;
 	assign PC_plus_4 = {PC[31], PC[30:0] + 31'd4};
-	// TODO: Remove Branch Signal, add interrupt
-	assign PC_next = Branch_out? PC_branch:
-					 (PCSrc == 3'b000)? PC_plus_4:
+	assign PC_next = (PCSrc == 3'b100)? 32'h80000004:
+					 (PCSrc == 3'b101)? 32'h80000008:
+					 Branch_out? PC_branch:
 					 (PCSrc == 3'b001)? PC_jump:
 					 (PCSrc == 3'b010)? PC_jr:
-					 (PCSrc == 3'b100)? 32'h80000004:
-					 32'h80000008;
+					 PC_plus_4;
 	always @(posedge reset or posedge clk)
 		if (reset)
 			PC <= 32'h80000000;
@@ -91,10 +90,10 @@ module CPU(reset, clk, leds, digits);
 			IF_ID_Instruction <= 32'h00000000;
 			if (reset) begin
 				IF_ID_PC <= 32'h00000000;
-			end else if (PCSrc == 3'b001 || PCSrc == 3'b010 || Branch || Branch_out) begin
-				IF_ID_PC <= IF_ID_PC;
+			end else if (Branch_out) begin
+				IF_ID_PC <= PC_branch;
 			end else begin
-				IF_ID_PC <= PC;
+				IF_ID_PC <= IF_ID_PC;
 			end
 			IF_ID_PC_plus_4 <= 32'h00000000;
 		end else if (~Stall) begin
@@ -121,7 +120,6 @@ module CPU(reset, clk, leds, digits);
 		.ID_EX_RegisterRd(ID_EX_RegisterRd), .EX_MEM_RegisterRd(EX_MEM_RegisterRd), .PCSrc(PCSrc), .Stall(Stall));
 	
 	// ID Stage Forwarding
-	// TODO: Forwarding, whether RtSrc is needed
 	wire [1:0] ID_RsSrc;
 	wire ID_RtSrc;
 	wire [1:0] EX_RsSrc;

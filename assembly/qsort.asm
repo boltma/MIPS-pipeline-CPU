@@ -148,28 +148,66 @@ interrupt:
 
 show0:
 	li $t0, 0x00000100
-	add $t0, $t0, $s0
-	j interruptExit
+	move $t1, $s0
+	j digits
 	
 show1:
 	li $t0, 0x00000200
-	add $t0, $t0, $s1
-	j interruptExit
+	move $t1, $s1
+	j digits
 
 show2:
 	li $t0, 0x00000400
-	add $t0, $t0, $s2
-	j interruptExit
+	move $t1, $s2
+	j digits
 
 show3:
 	li $t0, 0x00000800
-	add $t0, $t0, $s3
-	j interruptExit
+	move $t1, $s3
+	j digits
+
+digits:
+	# show digits with num in $t1 and en in $t0
+	andi $t1, $t1, 0xf
+	addi $t2, $zero, 0x00c0
+	beq  $t1, 0, interruptExit
+	addi $t2, $zero, 0x00f9
+	beq  $t1, 1, interruptExit
+	addi $t2, $zero, 0x00a4
+	beq  $t1, 2, interruptExit
+	addi $t2, $zero, 0x00b0
+	beq  $t1, 3, interruptExit
+	addi $t2, $zero, 0x0099
+	beq  $t1, 4, interruptExit
+	addi $t2, $zero, 0x0092
+	beq  $t1, 5, interruptExit
+	addi $t2, $zero, 0x0082
+	beq  $t1, 6, interruptExit
+	addi $t2, $zero, 0x00f8
+	beq  $t1, 7, interruptExit
+	addi $t2, $zero, 0x0080
+	beq  $t1, 8, interruptExit
+	addi $t2, $zero, 0x0090
+	beq  $t1, 9, interruptExit
+	addi $t2, $zero, 0x0088
+	beq  $t1, 10, interruptExit
+	addi $t2, $zero, 0x0083
+	beq  $t1, 11, interruptExit
+	addi $t2, $zero, 0x00c6
+	beq  $t1, 12, interruptExit
+	addi $t2, $zero, 0x00a1
+	beq  $t1, 13, interruptExit
+	addi $t2, $zero, 0x0086
+	beq  $t1, 14, interruptExit
+	addi $t2, $zero, 0x008e
+	beq  $t1, 15, interruptExit
+	addi $t2, $zero, 0x00ff
 	
 interruptExit:
 	addi $s6, $s6, 1
 	andi $s6, $s6, 3
 	
+	add $t0, $t0, $t2
 	sw $t0, 16($s7)
 	li $t0, 3
 	sw $t0, 8($s7)			# TCon = 3
