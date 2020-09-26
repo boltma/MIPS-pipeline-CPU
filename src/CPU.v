@@ -47,6 +47,7 @@ module CPU(reset, clk, leds, digits);
 	reg [3:0] ID_EX_ALUOp;
 	reg [1:0] ID_EX_MemtoReg;
 	reg ID_EX_MemRead, ID_EX_MemWrite;
+	reg [1:0] ID_EX_RsSrc, ID_EX_RtSrc;
 	
 	// EX/MEM Registers
 	reg [31:0] EX_MEM_PC_plus_4;
@@ -125,6 +126,7 @@ module CPU(reset, clk, leds, digits);
 	wire [1:0] EX_RsSrc;
 	wire [1:0] EX_RtSrc;
 	ForwardUnit forward_unit1(.RegisterRs(IF_ID_Instruction[25:21]), .RegisterRt(IF_ID_Instruction[20:16]),
+		.ID_EX_RegWrite(ID_EX_RegWrite), .ID_EX_RegisterRd(ID_EX_RegisterRd),
 		.ID_EX_RegisterRs(ID_EX_RegisterRs), .ID_EX_RegisterRt(ID_EX_RegisterRt),
 		.EX_MEM_RegWrite(EX_MEM_RegWrite), .EX_MEM_RegisterRd(EX_MEM_RegisterRd),
 		.MEM_WB_RegWrite(MEM_WB_RegWrite), .MEM_WB_RegisterRd(MEM_WB_RegisterRd),
@@ -175,6 +177,8 @@ module CPU(reset, clk, leds, digits);
 			ID_EX_MemtoReg <= 2'b00;
 			ID_EX_MemRead <= 1'b0;
 			ID_EX_MemWrite <= 1'b0;
+			ID_EX_RsSrc <= 2'b0;
+			ID_EX_RtSrc <= 2'b0;
 		end else begin
 			ID_EX_PC_plus_4 <= PC_to_store;
 			ID_EX_Branch <= Branch;
@@ -194,16 +198,18 @@ module CPU(reset, clk, leds, digits);
 			ID_EX_MemtoReg <= MemtoReg;
 			ID_EX_MemRead <= MemRead;
 			ID_EX_MemWrite <= MemWrite;
+			ID_EX_RsSrc <= EX_RsSrc;
+			ID_EX_RtSrc <= EX_RtSrc;
 		end
 	
 	// EX Stage
 	// EX Stage Forwarding
 	wire [31:0] EX_Rs_data, EX_Rt_data;
-	assign EX_Rs_data = (EX_RsSrc == 2'b00)? ID_EX_Rs_data:
-                        (EX_RsSrc == 2'b01)? EX_MEM_ALU_out:
+	assign EX_Rs_data = (ID_EX_RsSrc == 2'b00)? ID_EX_Rs_data:
+                        (ID_EX_RsSrc == 2'b01)? EX_MEM_ALU_out:
                         MEM_WB_Write_data;
-	assign EX_Rt_data = (EX_RtSrc == 2'b00)? ID_EX_Rt_data:
-                        (EX_RtSrc == 2'b01)? EX_MEM_ALU_out:
+	assign EX_Rt_data = (ID_EX_RtSrc == 2'b00)? ID_EX_Rt_data:
+                        (ID_EX_RtSrc == 2'b01)? EX_MEM_ALU_out:
                         MEM_WB_Write_data;
 	
 	// ALU
